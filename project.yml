@@ -1,0 +1,31 @@
+name: SakeLabelNotes
+options:
+  minimumXcodeGenVersion: 2.38.0
+settings:
+  base:
+    PRODUCT_BUNDLE_IDENTIFIER: com.example.SakeLabelNotes
+    SWIFT_VERSION: 5.0
+    IPHONEOS_DEPLOYMENT_TARGET: 17.0
+    TARGETED_DEVICE_FAMILY: 1,2
+    SUPPORTED_PLATFORMS: "iphoneos iphonesimulator"
+targets:
+  SakeLabelNotes:
+    type: application
+    platform: iOS
+    sources:
+      - path: Sources
+    info:
+      path: Sources/App/Info.plist
+      properties:
+        CFBundleDisplayName: Sake Label Notes
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+        NSCameraUsageDescription: お酒ラベルを撮影するためにカメラを使用します。
+        NSPhotoLibraryUsageDescription: 保存済みの写真を読み込むためにフォトライブラリを使用します。
+        NSPhotoLibraryAddUsageDescription: 撮影した写真を写真アプリへ保存するために使用します。
+    settings:
+      base:
+        INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents: YES
+        GENERATE_INFOPLIST_FILE: NO
+        SUPPORTS_MAC_DESIGNED_FOR_IPHONE_IPAD: YES
