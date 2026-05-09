@@ -45,3 +45,10 @@
 - カメラ撮影した画像は `UIImage` の再エンコード時に EXIF / TIFF メタデータを埋め戻して写真ライブラリへ保存する。
 - フォトライブラリから選択した既存写真は再保存せず、既存 `PHAsset` の `localIdentifier` をそのまま参照する。
 - 保存したメタデータは UI へ表示せず、写真ライブラリ上の原本保持を優先する。
+
+## 10. 日時は `登録日時` に統一
+
+- エントリは `createdAt` / `updatedAt` を個別管理せず、単一の `registeredAt` を保持する。
+- カメラ撮影からの登録では、撮影画像メタデータ上の撮影時刻を `registeredAt` に採用する。
+- フォトライブラリからの登録では、画像の EXIF 撮影時刻を優先し、取得できない場合のみ `PHAsset.creationDate` を使う。
+- 既存データ読込時は、旧 `createdAt` / `updatedAt` から `registeredAt` へ後方互換で移行する。

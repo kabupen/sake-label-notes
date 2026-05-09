@@ -18,7 +18,7 @@ final class LabelStore: ObservableObject {
         let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         let appDirectory = directory.appendingPathComponent("SakeLabelNotes", isDirectory: true)
         self.fileURL = appDirectory.appendingPathComponent("preview-entries.json")
-        self.entries = previewEntries.sorted(by: { $0.updatedAt > $1.updatedAt })
+        self.entries = previewEntries.sorted(by: { $0.registeredAt > $1.registeredAt })
     }
 
     func loadEntries() -> [LabelEntry] {
@@ -27,13 +27,11 @@ final class LabelStore: ObservableObject {
 
     func saveEntry(_ entry: LabelEntry) {
         if let index = entries.firstIndex(where: { $0.id == entry.id }) {
-            var updated = entry
-            updated.updatedAt = .now
-            entries[index] = updated
+            entries[index] = entry
         } else {
             entries.insert(entry, at: 0)
         }
-        entries.sort(by: { $0.updatedAt > $1.updatedAt })
+        entries.sort(by: { $0.registeredAt > $1.registeredAt })
         save()
     }
 
@@ -54,7 +52,8 @@ final class LabelStore: ObservableObject {
         rating: Int,
         category: BeverageCategory,
         imageLocalIdentifier: String,
-        backupImageFilename: String? = nil
+        backupImageFilename: String? = nil,
+        registeredAt: Date
     ) {
         let entry = LabelEntry(
             title: title,
@@ -62,7 +61,8 @@ final class LabelStore: ObservableObject {
             rating: rating,
             category: category,
             imageLocalIdentifier: imageLocalIdentifier,
-            backupImageFilename: backupImageFilename
+            backupImageFilename: backupImageFilename,
+            registeredAt: registeredAt
         )
         saveEntry(entry)
     }
@@ -89,8 +89,7 @@ final class LabelStore: ObservableObject {
         if previousBackupFilename != backupImageFilename {
             PhotoLibraryService.deleteBackupImage(filename: previousBackupFilename)
         }
-        entries[index].updatedAt = .now
-        entries.sort(by: { $0.updatedAt > $1.updatedAt })
+        entries.sort(by: { $0.registeredAt > $1.registeredAt })
         save()
     }
 
@@ -104,7 +103,7 @@ final class LabelStore: ObservableObject {
         do {
             let data = try Data(contentsOf: fileURL)
             let decoded = try JSONDecoder().decode([LabelEntry].self, from: data)
-            entries = decoded.sorted(by: { $0.updatedAt > $1.updatedAt })
+            entries = decoded.sorted(by: { $0.registeredAt > $1.registeredAt })
         } catch {
             entries = []
         }

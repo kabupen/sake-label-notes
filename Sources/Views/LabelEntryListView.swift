@@ -87,7 +87,7 @@ struct LabelEntryListView: View {
                                                             .foregroundStyle(AppTheme.secondaryText)
                                                             .lineLimit(2)
                                                         Label(
-                                                            entry.updatedAt.formatted(date: .abbreviated, time: .shortened),
+                                                            entry.registeredAt.formatted(date: .abbreviated, time: .shortened),
                                                             systemImage: "clock"
                                                         )
                                                         .font(.caption)

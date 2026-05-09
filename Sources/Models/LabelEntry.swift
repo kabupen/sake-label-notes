@@ -16,8 +16,7 @@ struct LabelEntry: Identifiable, Codable, Equatable {
     var category: BeverageCategory
     var imageLocalIdentifier: String
     var backupImageFilename: String?
-    var createdAt: Date
-    var updatedAt: Date
+    var registeredAt: Date
 
     init(
         id: UUID = UUID(),
@@ -27,8 +26,7 @@ struct LabelEntry: Identifiable, Codable, Equatable {
         category: BeverageCategory = .sake,
         imageLocalIdentifier: String,
         backupImageFilename: String? = nil,
-        createdAt: Date = .now,
-        updatedAt: Date = .now
+        registeredAt: Date = .now
     ) {
         self.id = id
         self.title = title
@@ -37,8 +35,7 @@ struct LabelEntry: Identifiable, Codable, Equatable {
         self.category = category
         self.imageLocalIdentifier = imageLocalIdentifier
         self.backupImageFilename = backupImageFilename
-        self.createdAt = createdAt
-        self.updatedAt = updatedAt
+        self.registeredAt = registeredAt
     }
 
     private enum CodingKeys: String, CodingKey {
@@ -49,6 +46,7 @@ struct LabelEntry: Identifiable, Codable, Equatable {
         case category
         case imageLocalIdentifier
         case backupImageFilename
+        case registeredAt
         case createdAt
         case updatedAt
     }
@@ -62,8 +60,22 @@ struct LabelEntry: Identifiable, Codable, Equatable {
         category = try container.decodeIfPresent(BeverageCategory.self, forKey: .category) ?? .sake
         imageLocalIdentifier = try container.decode(String.self, forKey: .imageLocalIdentifier)
         backupImageFilename = try container.decodeIfPresent(String.self, forKey: .backupImageFilename)
-        createdAt = try container.decode(Date.self, forKey: .createdAt)
-        updatedAt = try container.decode(Date.self, forKey: .updatedAt)
+        let registeredAtValue = try container.decodeIfPresent(Date.self, forKey: .registeredAt)
+        let createdAtValue = try container.decodeIfPresent(Date.self, forKey: .createdAt)
+        let updatedAtValue = try container.decodeIfPresent(Date.self, forKey: .updatedAt)
+        registeredAt = registeredAtValue ?? createdAtValue ?? updatedAtValue ?? .now
+    }
+
+    func encode(to encoder: Encoder) throws {
+        var container = encoder.container(keyedBy: CodingKeys.self)
+        try container.encode(id, forKey: .id)
+        try container.encode(title, forKey: .title)
+        try container.encode(memo, forKey: .memo)
+        try container.encode(rating, forKey: .rating)
+        try container.encode(category, forKey: .category)
+        try container.encode(imageLocalIdentifier, forKey: .imageLocalIdentifier)
+        try container.encodeIfPresent(backupImageFilename, forKey: .backupImageFilename)
+        try container.encode(registeredAt, forKey: .registeredAt)
     }
 }
 
@@ -75,8 +87,7 @@ extension LabelEntry {
             rating: 5,
             category: .sake,
             imageLocalIdentifier: "preview-1",
-            createdAt: .now.addingTimeInterval(-60 * 60 * 24 * 3),
-            updatedAt: .now.addingTimeInterval(-60 * 60 * 2)
+            registeredAt: .now.addingTimeInterval(-60 * 60 * 24 * 3)
         ),
         LabelEntry(
             title: "山崎 12年",
@@ -84,8 +95,7 @@ extension LabelEntry {
             rating: 4,
             category: .whiskey,
             imageLocalIdentifier: "preview-2",
-            createdAt: .now.addingTimeInterval(-60 * 60 * 24 * 10),
-            updatedAt: .now.addingTimeInterval(-60 * 60 * 24)
+            registeredAt: .now.addingTimeInterval(-60 * 60 * 24 * 10)
         )
     ]
 }

@@ -86,13 +86,10 @@ struct LabelEntryDetailView: View {
 
                         CardContainer {
                             VStack(alignment: .leading, spacing: 8) {
-                                Text("日時")
+                                Text("登録日時")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                Label("作成: \(entry.createdAt.formatted(date: .abbreviated, time: .shortened))", systemImage: "calendar")
-                                    .font(.footnote)
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Label("更新: \(entry.updatedAt.formatted(date: .abbreviated, time: .shortened))", systemImage: "clock.arrow.circlepath")
+                                Label(entry.registeredAt.formatted(date: .abbreviated, time: .shortened), systemImage: "calendar")
                                     .font(.footnote)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }

@@ -11,11 +11,18 @@ enum PhotoLibraryError: Error {
     case imageEncodingFailed
     case backupSaveFailed
     case backupLoadFailed
+    case assetDataFetchFailed
 }
 
 struct CapturedPhotoSaveResult {
     let localIdentifier: String
     let backupImageFilename: String
+    let registeredAt: Date
+}
+
+struct ImportedPhotoLibraryAsset {
+    let backupImageFilename: String
+    let registeredAt: Date
 }
 
 struct PhotoLibraryService {
@@ -99,9 +106,11 @@ struct PhotoLibraryService {
         let processedImage = processedCapturedImage(image)
         let localIdentifier = try await saveCapturedImageToPhotoLibrary(processedImage, metadata: metadata)
         let backupImageFilename = try saveBackupImage(processedImage)
+        let registeredAt = captureDate(from: metadata) ?? .now
         return CapturedPhotoSaveResult(
             localIdentifier: localIdentifier,
-            backupImageFilename: backupImageFilename
+            backupImageFilename: backupImageFilename,
+            registeredAt: registeredAt
         )
     }
 
@@ -149,6 +158,29 @@ struct PhotoLibraryService {
         guard let filename else { return }
         let fileURL = backupDirectoryURL().appendingPathComponent(filename)
         try? FileManager.default.removeItem(at: fileURL)
+    }
+
+    static func importPhotoLibraryAssetBackup(localIdentifier: String) async throws -> ImportedPhotoLibraryAsset {
+        let allowed = await requestPhotoLibraryAuthorization()
+        guard allowed else { throw PhotoLibraryError.unauthorized }
+
+        let results = PHAsset.fetchAssets(withLocalIdentifiers: [localIdentifier], options: nil)
+        guard let asset = results.firstObject else {
+            throw PhotoLibraryError.assetDataFetchFailed
+        }
+
+        let data = try await requestImageData(for: asset)
+        let metadata = imageProperties(from: data)
+        guard let image = UIImage(data: data) else {
+            throw PhotoLibraryError.assetDataFetchFailed
+        }
+
+        let registeredAt = photoLibraryDate(from: metadata) ?? asset.creationDate ?? .now
+        let backupImageFilename = try saveBackupImage(image, metadata: metadata)
+        return ImportedPhotoLibraryAsset(
+            backupImageFilename: backupImageFilename,
+            registeredAt: registeredAt
+        )
     }
 
     private static func makeImageData(image: UIImage, metadata: [String: Any]) throws -> Data {
@@ -242,11 +274,9 @@ struct PhotoLibraryService {
         }
     }
 
-    private static func saveBackupImage(_ image: UIImage) throws -> String {
+    private static func saveBackupImage(_ image: UIImage, metadata: [String: Any] = [:]) throws -> String {
         let backupImage = downscaledBackupImage(image)
-        guard let data = backupImage.jpegData(compressionQuality: 0.82) else {
-            throw PhotoLibraryError.backupSaveFailed
-        }
+        let data = try makeImageData(image: backupImage, metadata: metadata)
 
         let filename = "\(UUID().uuidString).jpg"
         let fileURL = backupDirectoryURL().appendingPathComponent(filename)
@@ -274,6 +304,84 @@ struct PhotoLibraryService {
     private static func backupDirectoryURL() -> URL {
         let directory = FileManager.default.urls(for: .applicationSupportDirectory, in: .userDomainMask).first!
         return directory.appendingPathComponent("SakeLabelNotes/ImageBackups", isDirectory: true)
+    }
+
+    private static func requestImageData(for asset: PHAsset) async throws -> Data {
+        try await withCheckedThrowingContinuation { continuation in
+            let options = PHImageRequestOptions()
+            options.deliveryMode = .highQualityFormat
+            options.isNetworkAccessAllowed = false
+            options.version = .current
+
+            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, info in
+                if let cancelled = info?[PHImageCancelledKey] as? Bool, cancelled {
+                    continuation.resume(throwing: PhotoLibraryError.assetDataFetchFailed)
+                    return
+                }
+                if let error = info?[PHImageErrorKey] as? Error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                guard let data else {
+                    continuation.resume(throwing: PhotoLibraryError.assetDataFetchFailed)
+                    return
+                }
+                continuation.resume(returning: data)
+            }
+        }
+    }
+
+    private static func imageProperties(from data: Data) -> [String: Any] {
+        guard
+            let source = CGImageSourceCreateWithData(data as CFData, nil),
+            let properties = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [String: Any]
+        else {
+            return [:]
+        }
+        return properties
+    }
+
+    private static func captureDate(from metadata: [String: Any]) -> Date? {
+        metadataDate(from: metadata)
+    }
+
+    private static func photoLibraryDate(from metadata: [String: Any]) -> Date? {
+        metadataDate(from: metadata)
+    }
+
+    private static func metadataDate(from metadata: [String: Any]) -> Date? {
+        let formatter = DateFormatter()
+        formatter.locale = Locale(identifier: "en_US_POSIX")
+        formatter.timeZone = .current
+        formatter.dateFormat = "yyyy:MM:dd HH:mm:ss"
+
+        if
+            let exif = metadata[kCGImagePropertyExifDictionary as String] as? [String: Any],
+            let dateString = exif[kCGImagePropertyExifDateTimeOriginal as String] as? String,
+            let date = formatter.date(from: dateString)
+        {
+            return date
+        }
+
+        if
+            let tiff = metadata[kCGImagePropertyTIFFDictionary as String] as? [String: Any],
+            let dateString = tiff[kCGImagePropertyTIFFDateTime as String] as? String,
+            let date = formatter.date(from: dateString)
+        {
+            return date
+        }
+
+        if
+            let png = metadata[kCGImagePropertyPNGDictionary as String] as? [String: Any],
+            let dateString = png[kCGImagePropertyPNGCreationTime as String] as? String
+        {
+            let isoFormatter = ISO8601DateFormatter()
+            if let date = isoFormatter.date(from: dateString) {
+                return date
+            }
+        }
+
+        return nil
     }
 }
 

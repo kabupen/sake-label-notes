@@ -235,13 +235,24 @@ struct LabelEntryEditorView: View {
 
             let localIdentifier: String
             let backupImageFilename: String?
+            let registeredAt: Date
             if let selectedImage {
                 let result = try await PhotoLibraryService.saveCapturedImageAssets(selectedImage, metadata: capturedImageMetadata)
                 localIdentifier = result.localIdentifier
                 backupImageFilename = result.backupImageFilename
+                registeredAt = result.registeredAt
             } else if let selectedImageLocalIdentifier {
                 localIdentifier = selectedImageLocalIdentifier
-                backupImageFilename = selectedBackupImageFilename
+                if let selectedBackupImageFilename {
+                    backupImageFilename = selectedBackupImageFilename
+                    registeredAt = entryBeingEdited?.registeredAt ?? .now
+                } else {
+                    let importedAsset = try await PhotoLibraryService.importPhotoLibraryAssetBackup(
+                        localIdentifier: selectedImageLocalIdentifier
+                    )
+                    backupImageFilename = importedAsset.backupImageFilename
+                    registeredAt = importedAsset.registeredAt
+                }
             } else {
                 errorMessage = "画像を追加してください。"
                 return
@@ -264,7 +275,8 @@ struct LabelEntryEditorView: View {
                     rating: rating,
                     category: category,
                     imageLocalIdentifier: localIdentifier,
-                    backupImageFilename: backupImageFilename
+                    backupImageFilename: backupImageFilename,
+                    registeredAt: registeredAt
                 )
             }
             dismiss()
