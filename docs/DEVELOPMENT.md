@@ -43,6 +43,7 @@
   1. `xcodegen generate`
   2. `xcodebuild -project SakeLabelNotes.xcodeproj -scheme SakeLabelNotes -sdk iphonesimulator -configuration Debug build`
 - `xcodebuild` が失敗した場合は、原因を修正して再実行し、成功するまで繰り返す。
+- 大きな機能追加の際にはgit commit を行う。適切な粒度でcommitをまとめること。
 
 ## ビルド失敗時の確認ポイント
 

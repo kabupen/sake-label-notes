@@ -14,13 +14,15 @@ struct LabelEntryEditorView: View {
 
     @State private var title = ""
     @State private var memo = ""
+    @State private var rating = 0
+    @State private var category: BeverageCategory = .sake
     @State private var selectedImage: UIImage?
     @State private var selectedImageLocalIdentifier: String?
+    @State private var capturedImageMetadata: [String: Any] = [:]
     @State private var isSaving = false
     @State private var errorMessage: String?
     @State private var showingSourceDialog = false
-    @State private var pickerSourceType: UIImagePickerController.SourceType = .photoLibrary
-    @State private var showingImagePicker = false
+    @State private var activePickerSource: PickerSource?
 
     private var isEditing: Bool {
         if case .edit = mode { return true }
@@ -69,18 +71,18 @@ struct LabelEntryEditorView: View {
                                                     .font(.title2)
                                                 Text("画像が未設定です")
                                                     .font(.footnote)
+                                                Text("タップして写真を追加")
+                                                    .font(.caption)
                                             }
                                             .foregroundStyle(.secondary)
                                         }
                                         .frame(height: 180)
                                     }
                                 }
-
-                                Button("写真を追加") {
+                                .contentShape(RoundedRectangle(cornerRadius: 12))
+                                .onTapGesture {
                                     showingSourceDialog = true
                                 }
-                                .buttonStyle(.borderedProminent)
-                                .tint(AppTheme.accent)
                             }
                         }
 
@@ -94,6 +96,47 @@ struct LabelEntryEditorView: View {
                                     .padding(10)
                                     .background(Color.gray.opacity(0.08))
                                     .clipShape(RoundedRectangle(cornerRadius: 10))
+                            }
+                        }
+
+                        CardContainer {
+                            VStack(alignment: .leading, spacing: 12) {
+                                Text("レーティング")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                HStack(spacing: 8) {
+                                    ForEach(1...5, id: \.self) { value in
+                                        Button {
+                                            rating = rating == value ? 0 : value
+                                        } label: {
+                                            Image(systemName: value <= rating ? "star.fill" : "star")
+                                                .font(.title3)
+                                                .foregroundStyle(value <= rating ? AppTheme.accent : .secondary)
+                                                .frame(width: 32, height: 32)
+                                        }
+                                        .buttonStyle(.plain)
+                                    }
+                                }
+
+                                Text(rating == 0 ? "未評価" : String(repeating: "★", count: rating))
+                                    .font(.footnote)
+                                    .foregroundStyle(.secondary)
+                            }
+                        }
+
+                        CardContainer {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("お酒ラベル")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+
+                                Picker("お酒ラベル", selection: $category) {
+                                    ForEach(BeverageCategory.allCases) { category in
+                                        Text(category.rawValue).tag(category)
+                                    }
+                                }
+                                .pickerStyle(.segmented)
                             }
                         }
 
@@ -156,9 +199,18 @@ struct LabelEntryEditorView: View {
                 }
                 Button("キャンセル", role: .cancel) {}
             }
-            .sheet(isPresented: $showingImagePicker) {
-                ImagePicker(sourceType: pickerSourceType) { image in
-                    selectedImage = image
+            .fullScreenCover(item: $activePickerSource) { source in
+                ImagePicker(sourceType: source.uiKitSourceType) { image in
+                    switch image {
+                    case .asset(let localIdentifier):
+                        selectedImage = nil
+                        selectedImageLocalIdentifier = localIdentifier
+                        capturedImageMetadata = [:]
+                    case .captured(let image, let metadata):
+                        selectedImage = image
+                        selectedImageLocalIdentifier = nil
+                        capturedImageMetadata = metadata
+                    }
                     errorMessage = nil
                 }
             }
@@ -177,7 +229,10 @@ struct LabelEntryEditorView: View {
 
             let localIdentifier: String
             if let selectedImage {
-                localIdentifier = try await PhotoLibraryService.saveImageToPhotoLibrary(selectedImage)
+                localIdentifier = try await PhotoLibraryService.saveCapturedImageToPhotoLibrary(
+                    selectedImage,
+                    metadata: capturedImageMetadata
+                )
             } else if let selectedImageLocalIdentifier {
                 localIdentifier = selectedImageLocalIdentifier
             } else {
@@ -190,10 +245,18 @@ struct LabelEntryEditorView: View {
                     id: entryBeingEdited.id,
                     title: normalizedTitle,
                     memo: memo,
+                    rating: rating,
+                    category: category,
                     imageLocalIdentifier: localIdentifier
                 )
             } else {
-                store.add(title: normalizedTitle, memo: memo, imageLocalIdentifier: localIdentifier)
+                store.add(
+                    title: normalizedTitle,
+                    memo: memo,
+                    rating: rating,
+                    category: category,
+                    imageLocalIdentifier: localIdentifier
+                )
             }
             dismiss()
         } catch {
@@ -206,7 +269,11 @@ struct LabelEntryEditorView: View {
         if case .edit(let entry) = mode {
             title = entry.title
             memo = entry.memo
+            rating = entry.rating
+            category = entry.category
+            selectedImage = nil
             selectedImageLocalIdentifier = entry.imageLocalIdentifier
+            capturedImageMetadata = [:]
         }
     }
 
@@ -229,8 +296,28 @@ struct LabelEntryEditorView: View {
             return
         }
 
-        pickerSourceType = source
-        showingImagePicker = true
+        activePickerSource = PickerSource(sourceType: source)
+    }
+}
+
+private struct PickerSource: Identifiable {
+    let sourceType: UIImagePickerController.SourceType
+
+    var id: String {
+        switch sourceType {
+        case .camera:
+            return "camera"
+        case .photoLibrary:
+            return "photoLibrary"
+        case .savedPhotosAlbum:
+            return "savedPhotosAlbum"
+        @unknown default:
+            return "unknown"
+        }
+    }
+
+    var uiKitSourceType: UIImagePickerController.SourceType {
+        sourceType
     }
 }
 

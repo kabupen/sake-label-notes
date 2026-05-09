@@ -25,6 +25,7 @@ struct LabelEntryDetailView: View {
                                     .frame(height: 300)
                                     .clipShape(RoundedRectangle(cornerRadius: 12))
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
                         CardContainer {
@@ -34,7 +35,22 @@ struct LabelEntryDetailView: View {
                                     .foregroundStyle(.secondary)
                                 Text(entry.title)
                                     .font(.title3.weight(.semibold))
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
+                        }
+
+                        CardContainer {
+                            VStack(alignment: .leading, spacing: 8) {
+                                Text("登録情報")
+                                    .font(.caption)
+                                    .foregroundStyle(.secondary)
+                                Text("お酒ラベル: \(entry.category.rawValue)")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                Text(entry.rating > 0 ? "レーティング: \(String(repeating: "★", count: entry.rating))" : "レーティング: 未評価")
+                                    .frame(maxWidth: .infinity, alignment: .leading)
+                            }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
                         CardContainer {
@@ -46,6 +62,7 @@ struct LabelEntryDetailView: View {
                                     .foregroundStyle(entry.memo.isEmpty ? .secondary : .primary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
 
                         CardContainer {
@@ -55,11 +72,13 @@ struct LabelEntryDetailView: View {
                                     .foregroundStyle(.secondary)
                                 Label("作成: \(entry.createdAt.formatted(date: .abbreviated, time: .shortened))", systemImage: "calendar")
                                     .font(.footnote)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                                 Label("更新: \(entry.updatedAt.formatted(date: .abbreviated, time: .shortened))", systemImage: "clock.arrow.circlepath")
                                     .font(.footnote)
+                                    .frame(maxWidth: .infinity, alignment: .leading)
                             }
+                            .frame(maxWidth: .infinity, alignment: .leading)
                         }
-
                         Button(role: .destructive) {
                             showingDeleteConfirmation = true
                         } label: {

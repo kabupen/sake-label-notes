@@ -1,11 +1,14 @@
 import UIKit
 import Photos
 import AVFoundation
+import ImageIO
+import UniformTypeIdentifiers
 
 enum PhotoLibraryError: Error {
     case unauthorized
     case saveFailed
     case imageFetchFailed
+    case imageEncodingFailed
 }
 
 struct PhotoLibraryService {
@@ -56,6 +59,32 @@ struct PhotoLibraryService {
         }
     }
 
+    static func saveCapturedImageToPhotoLibrary(_ image: UIImage, metadata: [String: Any]) async throws -> String {
+        let allowed = await requestPhotoLibraryAuthorization()
+        guard allowed else { throw PhotoLibraryError.unauthorized }
+
+        let imageData = try makeImageData(image: image, metadata: metadata)
+
+        return try await withCheckedThrowingContinuation { continuation in
+            var identifier: String?
+            PHPhotoLibrary.shared().performChanges {
+                let request = PHAssetCreationRequest.forAsset()
+                request.addResource(with: .photo, data: imageData, options: nil)
+                identifier = request.placeholderForCreatedAsset?.localIdentifier
+            } completionHandler: { success, error in
+                if let error {
+                    continuation.resume(throwing: error)
+                    return
+                }
+                guard success, let identifier else {
+                    continuation.resume(throwing: PhotoLibraryError.saveFailed)
+                    return
+                }
+                continuation.resume(returning: identifier)
+            }
+        }
+    }
+
     static func fetchUIImage(localIdentifier: String, targetSize: CGSize = CGSize(width: 800, height: 800)) async throws -> UIImage {
         let allowed = await requestPhotoLibraryAuthorization()
         guard allowed else { throw PhotoLibraryError.unauthorized }
@@ -84,6 +113,60 @@ struct PhotoLibraryService {
                 }
                 continuation.resume(returning: image)
             }
+        }
+    }
+
+    private static func makeImageData(image: UIImage, metadata: [String: Any]) throws -> Data {
+        let normalizedImage = normalized(image)
+        guard let cgImage = normalizedImage.cgImage else {
+            throw PhotoLibraryError.imageEncodingFailed
+        }
+
+        let mutableData = NSMutableData()
+        guard let destination = CGImageDestinationCreateWithData(
+            mutableData,
+            UTType.jpeg.identifier as CFString,
+            1,
+            nil
+        ) else {
+            throw PhotoLibraryError.imageEncodingFailed
+        }
+
+        var mergedMetadata = metadata
+        mergedMetadata[kCGImagePropertyOrientation as String] = CGImagePropertyOrientation(normalizedImage.imageOrientation).rawValue
+        CGImageDestinationAddImage(destination, cgImage, mergedMetadata as CFDictionary)
+
+        guard CGImageDestinationFinalize(destination) else {
+            throw PhotoLibraryError.imageEncodingFailed
+        }
+
+        return mutableData as Data
+    }
+
+    private static func normalized(_ image: UIImage) -> UIImage {
+        if image.imageOrientation == .up {
+            return image
+        }
+
+        let renderer = UIGraphicsImageRenderer(size: image.size)
+        return renderer.image { _ in
+            image.draw(in: CGRect(origin: .zero, size: image.size))
+        }
+    }
+}
+
+private extension CGImagePropertyOrientation {
+    init(_ orientation: UIImage.Orientation) {
+        switch orientation {
+        case .up: self = .up
+        case .down: self = .down
+        case .left: self = .left
+        case .right: self = .right
+        case .upMirrored: self = .upMirrored
+        case .downMirrored: self = .downMirrored
+        case .leftMirrored: self = .leftMirrored
+        case .rightMirrored: self = .rightMirrored
+        @unknown default: self = .up
         }
     }
 }

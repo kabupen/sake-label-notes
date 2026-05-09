@@ -47,15 +47,36 @@ final class LabelStore: ObservableObject {
         save()
     }
 
-    func add(title: String, memo: String, imageLocalIdentifier: String) {
-        let entry = LabelEntry(title: title, memo: memo, imageLocalIdentifier: imageLocalIdentifier)
+    func add(
+        title: String,
+        memo: String,
+        rating: Int,
+        category: BeverageCategory,
+        imageLocalIdentifier: String
+    ) {
+        let entry = LabelEntry(
+            title: title,
+            memo: memo,
+            rating: rating,
+            category: category,
+            imageLocalIdentifier: imageLocalIdentifier
+        )
         saveEntry(entry)
     }
 
-    func update(id: UUID, title: String, memo: String, imageLocalIdentifier: String? = nil) {
+    func update(
+        id: UUID,
+        title: String,
+        memo: String,
+        rating: Int,
+        category: BeverageCategory,
+        imageLocalIdentifier: String? = nil
+    ) {
         guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
         entries[index].title = title
         entries[index].memo = memo
+        entries[index].rating = rating
+        entries[index].category = category
         if let imageLocalIdentifier {
             entries[index].imageLocalIdentifier = imageLocalIdentifier
         }

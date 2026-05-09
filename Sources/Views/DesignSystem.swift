@@ -16,6 +16,7 @@ struct CardContainer<Content: View>: View {
 
     var body: some View {
         content
+            .frame(maxWidth: .infinity, alignment: .leading)
             .padding(14)
             .background(AppTheme.card)
             .clipShape(RoundedRectangle(cornerRadius: 14, style: .continuous))
@@ -24,6 +25,6 @@ struct CardContainer<Content: View>: View {
                     .stroke(Color.black.opacity(0.05), lineWidth: 1)
             )
             .shadow(color: .black.opacity(0.06), radius: 8, x: 0, y: 4)
+            .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
-

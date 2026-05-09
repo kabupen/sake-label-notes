@@ -1,9 +1,15 @@
 import SwiftUI
 import UIKit
+import Photos
+
+enum PickedPhoto {
+    case asset(localIdentifier: String)
+    case captured(image: UIImage, metadata: [String: Any])
+}
 
 struct ImagePicker: UIViewControllerRepresentable {
     var sourceType: UIImagePickerController.SourceType
-    var onImagePicked: (UIImage) -> Void
+    var onImagePicked: (PickedPhoto) -> Void
 
     @Environment(\.dismiss) private var dismiss
 
@@ -15,8 +21,11 @@ struct ImagePicker: UIViewControllerRepresentable {
         }
 
         func imagePickerController(_ picker: UIImagePickerController, didFinishPickingMediaWithInfo info: [UIImagePickerController.InfoKey: Any]) {
-            if let image = info[.originalImage] as? UIImage {
-                parent.onImagePicked(image)
+            if let asset = info[.phAsset] as? PHAsset {
+                parent.onImagePicked(.asset(localIdentifier: asset.localIdentifier))
+            } else if let image = info[.originalImage] as? UIImage {
+                let metadata = info[.mediaMetadata] as? [String: Any] ?? [:]
+                parent.onImagePicked(.captured(image: image, metadata: metadata))
             }
             parent.dismiss()
         }
