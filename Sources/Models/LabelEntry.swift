@@ -15,6 +15,7 @@ struct LabelEntry: Identifiable, Codable, Equatable {
     var rating: Int
     var category: BeverageCategory
     var imageLocalIdentifier: String
+    var backupImageFilename: String?
     var createdAt: Date
     var updatedAt: Date
 
@@ -25,6 +26,7 @@ struct LabelEntry: Identifiable, Codable, Equatable {
         rating: Int = 0,
         category: BeverageCategory = .sake,
         imageLocalIdentifier: String,
+        backupImageFilename: String? = nil,
         createdAt: Date = .now,
         updatedAt: Date = .now
     ) {
@@ -34,6 +36,7 @@ struct LabelEntry: Identifiable, Codable, Equatable {
         self.rating = rating
         self.category = category
         self.imageLocalIdentifier = imageLocalIdentifier
+        self.backupImageFilename = backupImageFilename
         self.createdAt = createdAt
         self.updatedAt = updatedAt
     }
@@ -45,6 +48,7 @@ struct LabelEntry: Identifiable, Codable, Equatable {
         case rating
         case category
         case imageLocalIdentifier
+        case backupImageFilename
         case createdAt
         case updatedAt
     }
@@ -57,6 +61,7 @@ struct LabelEntry: Identifiable, Codable, Equatable {
         rating = try container.decodeIfPresent(Int.self, forKey: .rating) ?? 0
         category = try container.decodeIfPresent(BeverageCategory.self, forKey: .category) ?? .sake
         imageLocalIdentifier = try container.decode(String.self, forKey: .imageLocalIdentifier)
+        backupImageFilename = try container.decodeIfPresent(String.self, forKey: .backupImageFilename)
         createdAt = try container.decode(Date.self, forKey: .createdAt)
         updatedAt = try container.decode(Date.self, forKey: .updatedAt)
     }

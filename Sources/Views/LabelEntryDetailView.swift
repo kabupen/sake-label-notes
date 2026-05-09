@@ -19,7 +19,10 @@ struct LabelEntryDetailView: View {
                                 Text("写真")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                PhotoThumbnailView(localIdentifier: entry.imageLocalIdentifier)
+                                PhotoThumbnailView(
+                                    localIdentifier: entry.imageLocalIdentifier,
+                                    backupImageFilename: entry.backupImageFilename
+                                )
                                     .scaledToFit()
                                     .frame(maxWidth: .infinity)
                                     .frame(height: 300)
@@ -45,10 +48,26 @@ struct LabelEntryDetailView: View {
                                 Text("登録情報")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                Text("お酒ラベル: \(entry.category.rawValue)")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
-                                Text(entry.rating > 0 ? "レーティング: \(String(repeating: "★", count: entry.rating))" : "レーティング: 未評価")
-                                    .frame(maxWidth: .infinity, alignment: .leading)
+                                HStack(spacing: 8) {
+                                    Text(entry.category.rawValue)
+                                        .font(.caption.weight(.medium))
+                                        .foregroundStyle(AppTheme.accent)
+                                        .padding(.horizontal, 8)
+                                        .padding(.vertical, 4)
+                                        .background(AppTheme.accent.opacity(0.12))
+                                        .clipShape(Capsule())
+
+                                    if entry.rating > 0 {
+                                        Text(String(repeating: "★", count: entry.rating))
+                                            .font(.caption)
+                                            .foregroundStyle(.orange)
+                                    } else {
+                                        Text("未評価")
+                                            .font(.caption)
+                                            .foregroundStyle(.secondary)
+                                    }
+                                }
+                                .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }

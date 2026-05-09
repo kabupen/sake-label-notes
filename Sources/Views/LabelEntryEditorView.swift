@@ -18,6 +18,7 @@ struct LabelEntryEditorView: View {
     @State private var category: BeverageCategory = .sake
     @State private var selectedImage: UIImage?
     @State private var selectedImageLocalIdentifier: String?
+    @State private var selectedBackupImageFilename: String?
     @State private var capturedImageMetadata: [String: Any] = [:]
     @State private var isSaving = false
     @State private var errorMessage: String?
@@ -58,7 +59,10 @@ struct LabelEntryEditorView: View {
                                             .frame(maxHeight: 240)
                                             .clipShape(RoundedRectangle(cornerRadius: 12))
                                     } else if let selectedImageLocalIdentifier {
-                                        PhotoThumbnailView(localIdentifier: selectedImageLocalIdentifier)
+                                        PhotoThumbnailView(
+                                            localIdentifier: selectedImageLocalIdentifier,
+                                            backupImageFilename: selectedBackupImageFilename
+                                        )
                                             .scaledToFit()
                                             .frame(maxHeight: 240)
                                             .clipShape(RoundedRectangle(cornerRadius: 12))
@@ -205,10 +209,12 @@ struct LabelEntryEditorView: View {
                     case .asset(let localIdentifier):
                         selectedImage = nil
                         selectedImageLocalIdentifier = localIdentifier
+                        selectedBackupImageFilename = nil
                         capturedImageMetadata = [:]
                     case .captured(let image, let metadata):
                         selectedImage = image
                         selectedImageLocalIdentifier = nil
+                        selectedBackupImageFilename = nil
                         capturedImageMetadata = metadata
                     }
                     errorMessage = nil
@@ -228,13 +234,14 @@ struct LabelEntryEditorView: View {
             let normalizedTitle = title.trimmingCharacters(in: .whitespacesAndNewlines)
 
             let localIdentifier: String
+            let backupImageFilename: String?
             if let selectedImage {
-                localIdentifier = try await PhotoLibraryService.saveCapturedImageToPhotoLibrary(
-                    selectedImage,
-                    metadata: capturedImageMetadata
-                )
+                let result = try await PhotoLibraryService.saveCapturedImageAssets(selectedImage, metadata: capturedImageMetadata)
+                localIdentifier = result.localIdentifier
+                backupImageFilename = result.backupImageFilename
             } else if let selectedImageLocalIdentifier {
                 localIdentifier = selectedImageLocalIdentifier
+                backupImageFilename = selectedBackupImageFilename
             } else {
                 errorMessage = "画像を追加してください。"
                 return
@@ -247,7 +254,8 @@ struct LabelEntryEditorView: View {
                     memo: memo,
                     rating: rating,
                     category: category,
-                    imageLocalIdentifier: localIdentifier
+                    imageLocalIdentifier: localIdentifier,
+                    backupImageFilename: backupImageFilename
                 )
             } else {
                 store.add(
@@ -255,7 +263,8 @@ struct LabelEntryEditorView: View {
                     memo: memo,
                     rating: rating,
                     category: category,
-                    imageLocalIdentifier: localIdentifier
+                    imageLocalIdentifier: localIdentifier,
+                    backupImageFilename: backupImageFilename
                 )
             }
             dismiss()
@@ -273,6 +282,7 @@ struct LabelEntryEditorView: View {
             category = entry.category
             selectedImage = nil
             selectedImageLocalIdentifier = entry.imageLocalIdentifier
+            selectedBackupImageFilename = entry.backupImageFilename
             capturedImageMetadata = [:]
         }
     }

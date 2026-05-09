@@ -3,6 +3,7 @@ import Foundation
 
 struct PhotoThumbnailView: View {
     let localIdentifier: String
+    let backupImageFilename: String?
     @State private var image: UIImage?
     private let isPreview = ProcessInfo.processInfo.environment["XCODE_RUNNING_FOR_PREVIEWS"] == "1"
 
@@ -35,7 +36,11 @@ struct PhotoThumbnailView: View {
         do {
             image = try await PhotoLibraryService.fetchUIImage(localIdentifier: localIdentifier)
         } catch {
-            image = nil
+            guard let backupImageFilename else {
+                image = nil
+                return
+            }
+            image = try? PhotoLibraryService.loadBackupImage(filename: backupImageFilename)
         }
     }
 }

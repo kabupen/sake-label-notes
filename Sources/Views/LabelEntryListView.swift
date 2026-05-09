@@ -51,7 +51,10 @@ struct LabelEntryListView: View {
                                         } label: {
                                             CardContainer {
                                                 HStack(spacing: 12) {
-                                                    PhotoThumbnailView(localIdentifier: entry.imageLocalIdentifier)
+                                                    PhotoThumbnailView(
+                                                        localIdentifier: entry.imageLocalIdentifier,
+                                                        backupImageFilename: entry.backupImageFilename
+                                                    )
                                                         .frame(width: 76, height: 76)
                                                         .clipShape(RoundedRectangle(cornerRadius: 10))
 

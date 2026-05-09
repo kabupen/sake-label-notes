@@ -38,6 +38,7 @@ final class LabelStore: ObservableObject {
     }
 
     func deleteEntry(_ entry: LabelEntry) {
+        PhotoLibraryService.deleteBackupImage(filename: entry.backupImageFilename)
         entries.removeAll { $0.id == entry.id }
         save()
     }
@@ -52,14 +53,16 @@ final class LabelStore: ObservableObject {
         memo: String,
         rating: Int,
         category: BeverageCategory,
-        imageLocalIdentifier: String
+        imageLocalIdentifier: String,
+        backupImageFilename: String? = nil
     ) {
         let entry = LabelEntry(
             title: title,
             memo: memo,
             rating: rating,
             category: category,
-            imageLocalIdentifier: imageLocalIdentifier
+            imageLocalIdentifier: imageLocalIdentifier,
+            backupImageFilename: backupImageFilename
         )
         saveEntry(entry)
     }
@@ -70,15 +73,21 @@ final class LabelStore: ObservableObject {
         memo: String,
         rating: Int,
         category: BeverageCategory,
-        imageLocalIdentifier: String? = nil
+        imageLocalIdentifier: String? = nil,
+        backupImageFilename: String? = nil
     ) {
         guard let index = entries.firstIndex(where: { $0.id == id }) else { return }
+        let previousBackupFilename = entries[index].backupImageFilename
         entries[index].title = title
         entries[index].memo = memo
         entries[index].rating = rating
         entries[index].category = category
         if let imageLocalIdentifier {
             entries[index].imageLocalIdentifier = imageLocalIdentifier
+        }
+        entries[index].backupImageFilename = backupImageFilename
+        if previousBackupFilename != backupImageFilename {
+            PhotoLibraryService.deleteBackupImage(filename: previousBackupFilename)
         }
         entries[index].updatedAt = .now
         entries.sort(by: { $0.updatedAt > $1.updatedAt })

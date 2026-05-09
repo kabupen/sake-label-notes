@@ -44,6 +44,15 @@ struct ImagePicker: UIViewControllerRepresentable {
         picker.delegate = context.coordinator
         picker.sourceType = sourceType
         picker.allowsEditing = false
+        picker.modalPresentationStyle = .fullScreen
+        picker.view.backgroundColor = .black
+        picker.overrideUserInterfaceStyle = .dark
+
+        if sourceType == .camera {
+            picker.cameraCaptureMode = .photo
+            picker.showsCameraControls = true
+        }
+
         return picker
     }
 
