@@ -29,14 +29,11 @@ private struct LaunchSplashView: View {
             AppTheme.background.ignoresSafeArea()
 
             VStack(spacing: 18) {
-                RoundedRectangle(cornerRadius: 28, style: .continuous)
-                    .fill(AppTheme.accent)
+                Image("LaunchIcon")
+                    .resizable()
+                    .scaledToFit()
                     .frame(width: 120, height: 120)
-                    .overlay {
-                        Image(systemName: "wineglass.fill")
-                            .font(.system(size: 52, weight: .semibold))
-                            .foregroundStyle(.white)
-                    }
+                    .clipShape(RoundedRectangle(cornerRadius: 28, style: .continuous))
                     .shadow(color: .black.opacity(0.12), radius: 14, x: 0, y: 8)
 
                 VStack(spacing: 6) {
