@@ -28,3 +28,10 @@ struct CardContainer<Content: View>: View {
             .frame(maxWidth: .infinity, alignment: .leading)
     }
 }
+
+func ratingDisplayText(_ rating: Int) -> String {
+    guard rating > 0 else { return "未評価" }
+    let filledStars = String(repeating: "★", count: max(0, min(rating, 5)))
+    let emptyStars = String(repeating: "☆", count: max(0, 5 - min(rating, 5)))
+    return filledStars + emptyStars
+}

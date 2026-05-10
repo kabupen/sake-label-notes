@@ -4,7 +4,7 @@ import SwiftUI
 struct SakeLabelNotesApp: App {
     var body: some Scene {
         WindowGroup {
-            LabelEntryListView()
+            AppLaunchView()
         }
     }
 }

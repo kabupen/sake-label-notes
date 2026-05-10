@@ -11,6 +11,7 @@ struct LabelEntryEditorView: View {
     @EnvironmentObject private var store: LabelStore
 
     let mode: LabelEntryEditorMode
+    let onDelete: (() -> Void)?
 
     @State private var title = ""
     @State private var memo = ""
@@ -24,6 +25,12 @@ struct LabelEntryEditorView: View {
     @State private var errorMessage: String?
     @State private var showingSourceDialog = false
     @State private var activePickerSource: PickerSource?
+    @State private var showingDeleteConfirmation = false
+
+    init(mode: LabelEntryEditorMode, onDelete: (() -> Void)? = nil) {
+        self.mode = mode
+        self.onDelete = onDelete
+    }
 
     private var isEditing: Bool {
         if case .edit = mode { return true }
@@ -95,7 +102,7 @@ struct LabelEntryEditorView: View {
                                 Text("ラベル名")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                TextField("例: 山崎 12年", text: $title)
+                                TextField("未入力でも保存できます", text: $title)
                                     .textInputAutocapitalization(.words)
                                     .padding(10)
                                     .background(Color.gray.opacity(0.08))
@@ -123,7 +130,7 @@ struct LabelEntryEditorView: View {
                                     }
                                 }
 
-                                Text(rating == 0 ? "未評価" : String(repeating: "★", count: rating))
+                                Text(ratingDisplayText(rating))
                                     .font(.footnote)
                                     .foregroundStyle(.secondary)
                             }
@@ -140,7 +147,8 @@ struct LabelEntryEditorView: View {
                                         Text(category.rawValue).tag(category)
                                     }
                                 }
-                                .pickerStyle(.segmented)
+                                .pickerStyle(.wheel)
+                                .frame(height: 120)
                             }
                         }
 
@@ -165,6 +173,19 @@ struct LabelEntryEditorView: View {
                                 .frame(maxWidth: .infinity, alignment: .leading)
                                 .padding(.horizontal, 4)
                         }
+
+                        if isEditing {
+                            Button(role: .destructive) {
+                                showingDeleteConfirmation = true
+                            } label: {
+                                Text("削除")
+                                    .fontWeight(.semibold)
+                                    .frame(maxWidth: .infinity)
+                                    .padding(.vertical, 12)
+                            }
+                            .background(Color.red.opacity(0.12))
+                            .clipShape(RoundedRectangle(cornerRadius: 12))
+                        }
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
@@ -184,8 +205,7 @@ struct LabelEntryEditorView: View {
                         }
                     }
                     .disabled(
-                        title.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty
-                        || (selectedImage == nil && selectedImageLocalIdentifier == nil)
+                        (selectedImage == nil && selectedImageLocalIdentifier == nil)
                         || isSaving
                     )
                 }
@@ -219,6 +239,18 @@ struct LabelEntryEditorView: View {
                     }
                     errorMessage = nil
                 }
+            }
+            .alert("このラベルを削除しますか？", isPresented: $showingDeleteConfirmation) {
+                if let entryBeingEdited {
+                    Button("削除", role: .destructive) {
+                        store.deleteEntry(entryBeingEdited)
+                        dismiss()
+                        onDelete?()
+                    }
+                }
+                Button("キャンセル", role: .cancel) {}
+            } message: {
+                Text("この操作は取り消せません。")
             }
             .task {
                 await prepareInitialState()

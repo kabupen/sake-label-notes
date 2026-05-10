@@ -6,7 +6,6 @@ struct LabelEntryDetailView: View {
 
     let entryID: UUID
     @State private var showingEditor = false
-    @State private var showingDeleteConfirmation = false
 
     var body: some View {
         ZStack {
@@ -36,8 +35,9 @@ struct LabelEntryDetailView: View {
                                 Text("ラベル名")
                                     .font(.caption)
                                     .foregroundStyle(.secondary)
-                                Text(entry.title)
+                                Text(entry.title.isEmpty ? "ラベル名未設定" : entry.title)
                                     .font(.title3.weight(.semibold))
+                                    .foregroundStyle(entry.title.isEmpty ? .secondary : .primary)
                                     .frame(maxWidth: .infinity, alignment: .leading)
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
@@ -58,7 +58,7 @@ struct LabelEntryDetailView: View {
                                         .clipShape(Capsule())
 
                                     if entry.rating > 0 {
-                                        Text(String(repeating: "★", count: entry.rating))
+                                        Text(ratingDisplayText(entry.rating))
                                             .font(.caption)
                                             .foregroundStyle(.orange)
                                     } else {
@@ -95,16 +95,6 @@ struct LabelEntryDetailView: View {
                             }
                             .frame(maxWidth: .infinity, alignment: .leading)
                         }
-                        Button(role: .destructive) {
-                            showingDeleteConfirmation = true
-                        } label: {
-                            Text("削除")
-                                .fontWeight(.semibold)
-                                .frame(maxWidth: .infinity)
-                                .padding(.vertical, 12)
-                        }
-                        .background(Color.red.opacity(0.12))
-                        .clipShape(RoundedRectangle(cornerRadius: 12))
                     }
                     .padding(.horizontal, 16)
                     .padding(.vertical, 12)
@@ -115,20 +105,11 @@ struct LabelEntryDetailView: View {
         }
         .sheet(isPresented: $showingEditor) {
             if let currentEntry = store.entries.first(where: { $0.id == entryID }) {
-                LabelEntryEditorView(mode: .edit(currentEntry))
-                    .environmentObject(store)
-            }
-        }
-        .alert("このラベルを削除しますか？", isPresented: $showingDeleteConfirmation) {
-            if let entry = store.entries.first(where: { $0.id == entryID }) {
-                Button("削除", role: .destructive) {
-                    store.deleteEntry(entry)
+                LabelEntryEditorView(mode: .edit(currentEntry)) {
                     dismiss()
                 }
+                    .environmentObject(store)
             }
-            Button("キャンセル", role: .cancel) {}
-        } message: {
-            Text("この操作は取り消せません。")
         }
         .navigationTitle("詳細")
         .toolbar {

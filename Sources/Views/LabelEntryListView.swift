@@ -59,9 +59,9 @@ struct LabelEntryListView: View {
                                                         .clipShape(RoundedRectangle(cornerRadius: 10))
 
                                                     VStack(alignment: .leading, spacing: 6) {
-                                                        Text(entry.title)
+                                                        Text(entry.title.isEmpty ? "ラベル名未設定" : entry.title)
                                                             .font(.headline)
-                                                            .foregroundStyle(.primary)
+                                                            .foregroundStyle(entry.title.isEmpty ? .secondary : .primary)
                                                             .lineLimit(1)
                                                         HStack(spacing: 8) {
                                                             Text(entry.category.rawValue)
@@ -73,7 +73,7 @@ struct LabelEntryListView: View {
                                                                 .clipShape(Capsule())
 
                                                             if entry.rating > 0 {
-                                                                Text(String(repeating: "★", count: entry.rating))
+                                                                Text(ratingDisplayText(entry.rating))
                                                                     .font(.caption)
                                                                     .foregroundStyle(.orange)
                                                             } else {
@@ -114,12 +114,15 @@ struct LabelEntryListView: View {
                     }
                 }
             }
-            .navigationTitle("Sake Label Notes")
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    Text("Local First")
-                        .font(.caption)
-                        .foregroundStyle(.secondary)
+                    HStack(spacing: 6) {
+                        BottleMark()
+                            .frame(width: 12, height: 20)
+                        Text("サケラベル")
+                            .font(.system(size: 17, weight: .black, design: .default))
+                            .foregroundStyle(.primary)
+                    }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
                     Button {
@@ -208,6 +211,47 @@ private enum BeverageCategoryFilter: CaseIterable, Identifiable, Equatable {
         case .category(let category):
             return category.rawValue
         }
+    }
+}
+
+private struct BottleMark: View {
+    var body: some View {
+        GeometryReader { geometry in
+            let width = geometry.size.width
+            let height = geometry.size.height
+
+            Path { path in
+                path.move(to: CGPoint(x: width * 0.42, y: 0))
+                path.addLine(to: CGPoint(x: width * 0.58, y: 0))
+                path.addLine(to: CGPoint(x: width * 0.62, y: height * 0.16))
+                path.addLine(to: CGPoint(x: width * 0.68, y: height * 0.24))
+                path.addCurve(
+                    to: CGPoint(x: width * 0.82, y: height * 0.62),
+                    control1: CGPoint(x: width * 0.82, y: height * 0.34),
+                    control2: CGPoint(x: width * 0.86, y: height * 0.46)
+                )
+                path.addCurve(
+                    to: CGPoint(x: width * 0.72, y: height),
+                    control1: CGPoint(x: width * 0.8, y: height * 0.8),
+                    control2: CGPoint(x: width * 0.78, y: height * 0.96)
+                )
+                path.addLine(to: CGPoint(x: width * 0.28, y: height))
+                path.addCurve(
+                    to: CGPoint(x: width * 0.18, y: height * 0.62),
+                    control1: CGPoint(x: width * 0.22, y: height * 0.96),
+                    control2: CGPoint(x: width * 0.2, y: height * 0.8)
+                )
+                path.addCurve(
+                    to: CGPoint(x: width * 0.32, y: height * 0.24),
+                    control1: CGPoint(x: width * 0.14, y: height * 0.46),
+                    control2: CGPoint(x: width * 0.18, y: height * 0.34)
+                )
+                path.addLine(to: CGPoint(x: width * 0.38, y: height * 0.16))
+                path.closeSubpath()
+            }
+            .fill(Color.primary)
+        }
+        .accessibilityHidden(true)
     }
 }
 

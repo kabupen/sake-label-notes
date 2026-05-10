@@ -35,7 +35,7 @@
 
 ## モデル制約
 
-- `title` は空でないことを期待する
+- `title` は空でも保存可能とする
 - `memo` は空でも可
 - `imageLocalIdentifier` は画像表示時に必要
 - `registeredAt` は画像登録時に自動設定する
