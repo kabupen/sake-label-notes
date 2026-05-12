@@ -17,9 +17,13 @@
 
 ## 主要コンポーネント
 
+- `AppLaunchView`
+  - アプリ起動時のスプラッシュ表示と一覧画面への遷移を担う
 - `LabelEntryListView`
   - すべてのエントリを一覧表示
-  - 削除、選択操作を提供
+  - フィルター、削除、選択操作を提供
+- `SettingsView` / `OtherInfoView`
+  - 一覧画面の補助メニュー配下の静的画面を提供
 - `LabelEntryDetailView`
   - 単一エントリの表示と操作
 - `LabelEntryEditorView`
@@ -34,7 +38,8 @@
 1. `LabelEntryListView` が `LabelStore` に保存済みエントリを読み込む
 2. 新規追加または編集時に `LabelStore` へ保存
 3. 画像撮影／選択時に `PhotoLibraryService` が写真ライブラリへ保存し `localIdentifier` を取得
-4. `LabelEntry` は `localIdentifier` を保持し、表示時に `PhotoLibraryService` で画像を読み出す
+4. `PhotoLibraryService` は表示継続用にアプリ内バックアップ画像も保存する
+5. `LabelEntry` は `localIdentifier` と必要に応じて `backupImageFilename` を保持し、表示時に写真ライブラリ読込失敗時はバックアップへフォールバックする
 
 ## 依存関係ルール
 

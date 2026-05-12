@@ -5,6 +5,8 @@ struct LabelEntryListView: View {
     @State private var presentingNewEntryEditor = false
     @State private var pendingDeleteEntry: LabelEntry?
     @State private var selectedCategory: BeverageCategoryFilter = .all
+    @State private var activeSheet: AppMenuSheet?
+    @State private var showingSideMenu = false
 
     @MainActor
     init(store: LabelStore? = nil) {
@@ -24,6 +26,7 @@ struct LabelEntryListView: View {
         NavigationStack {
             ZStack {
                 AppTheme.background.ignoresSafeArea()
+
                 if store.entries.isEmpty {
                     ContentUnavailableView {
                         Label("まだラベルがありません", systemImage: "wineglass")
@@ -113,15 +116,47 @@ struct LabelEntryListView: View {
                         .padding(.vertical, 12)
                     }
                 }
+
+                Color.black.opacity(showingSideMenu ? 0.18 : 0)
+                    .ignoresSafeArea()
+                    .allowsHitTesting(showingSideMenu)
+                    .onTapGesture {
+                        withAnimation(.easeOut(duration: 0.22)) {
+                            showingSideMenu = false
+                        }
+                    }
+                    .animation(.easeOut(duration: 0.22), value: showingSideMenu)
+
+                HStack(spacing: 0) {
+                    sideMenu
+                        .frame(width: 260)
+                        .offset(x: showingSideMenu ? 0 : -260)
+                    Spacer(minLength: 0)
+                }
+                .allowsHitTesting(showingSideMenu)
+                .animation(.easeOut(duration: 0.22), value: showingSideMenu)
+                .zIndex(1)
             }
             .toolbar {
                 ToolbarItem(placement: .topBarLeading) {
-                    HStack(spacing: 6) {
-                        BottleMark()
-                            .frame(width: 12, height: 20)
-                        Text("サケラベル")
-                            .font(.system(size: 17, weight: .black, design: .default))
-                            .foregroundStyle(.primary)
+                    Button {
+                        withAnimation(.easeOut(duration: 0.2)) {
+                            showingSideMenu.toggle()
+                        }
+                    } label: {
+                        Image(systemName: "line.3.horizontal")
+                            .foregroundStyle(.black)
+                    }
+                }
+                ToolbarItem(placement: .principal) {
+                    if !showingSideMenu {
+                        HStack(spacing: 6) {
+                            BottleMark()
+                                .frame(width: 12, height: 20)
+                            Text("サケラベル")
+                                .font(.system(size: 17, weight: .black, design: .default))
+                                .foregroundStyle(.primary)
+                        }
                     }
                 }
                 ToolbarItem(placement: .topBarTrailing) {
@@ -129,12 +164,24 @@ struct LabelEntryListView: View {
                         presentingNewEntryEditor = true
                     } label: {
                         Image(systemName: "plus")
+                            .foregroundStyle(.black)
                     }
                 }
             }
+            .navigationBarTitleDisplayMode(.inline)
             .sheet(isPresented: $presentingNewEntryEditor) {
                 LabelEntryEditorView(mode: .new)
                     .environmentObject(store)
+            }
+            .sheet(item: $activeSheet) { sheet in
+                NavigationStack {
+                    switch sheet {
+                    case .settings:
+                        SettingsView()
+                    case .other:
+                        OtherInfoView()
+                    }
+                }
             }
             .alert("このラベルを削除しますか？", isPresented: deleteAlertBinding) {
                 Button("削除", role: .destructive) {
@@ -163,6 +210,49 @@ struct LabelEntryListView: View {
         )
     }
 
+    private var sideMenu: some View {
+        VStack(alignment: .leading, spacing: 0) {
+            Spacer()
+                .frame(height: 24)
+
+            Button {
+                showingSideMenu = false
+                activeSheet = .settings
+            } label: {
+                Label("設定", systemImage: "gearshape")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+            }
+            .buttonStyle(.plain)
+
+            Button {
+                showingSideMenu = false
+                activeSheet = .other
+            } label: {
+                Label("その他", systemImage: "ellipsis.circle")
+                    .font(.body.weight(.medium))
+                    .foregroundStyle(.primary)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .padding(.horizontal, 20)
+                    .padding(.vertical, 14)
+            }
+            .buttonStyle(.plain)
+
+            Spacer()
+        }
+        .frame(maxHeight: .infinity, alignment: .top)
+        .background(AppTheme.background)
+        .overlay(alignment: .trailing) {
+            Rectangle()
+                .fill(Color.black.opacity(0.08))
+                .frame(width: 1)
+        }
+        .shadow(color: .black.opacity(0.08), radius: 12, x: 4, y: 0)
+    }
+
     private var filterBar: some View {
         ScrollView(.horizontal, showsIndicators: false) {
             HStack(spacing: 8) {
@@ -185,6 +275,13 @@ struct LabelEntryListView: View {
         }
         .frame(maxWidth: .infinity, alignment: .leading)
     }
+}
+
+private enum AppMenuSheet: String, Identifiable {
+    case settings
+    case other
+
+    var id: String { rawValue }
 }
 
 private enum BeverageCategoryFilter: CaseIterable, Identifiable, Equatable {
